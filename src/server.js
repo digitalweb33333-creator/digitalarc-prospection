@@ -19,6 +19,7 @@ import http from "node:http";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { pull, push, crmStats, syncConfigured } from "./lib/crm-sync.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -32,34 +33,42 @@ let lastRun = null;
 let lastResult = null;
 let runs = 0;
 
-function runCycle(trigger) {
+function spawnAutoReply() {
   return new Promise((resolve) => {
-    if (running) {
-      console.log(`[server] cycle déjà en cours, ignore (${trigger})`);
-      return resolve({ skipped: true });
-    }
-    running = true;
-    runs++;
-    console.log(`[server] === cycle auto-reply (${trigger}) #${runs} ===`);
     const child = spawn(process.execPath, ["src/email/auto-reply.js", "--send"], {
       cwd: ROOT,
       env: process.env,
     });
     child.stdout.on("data", (d) => process.stdout.write(d));
     child.stderr.on("data", (d) => process.stderr.write(d));
-    child.on("close", (code) => {
-      running = false;
-      lastRun = new Date().toISOString();
-      lastResult = code;
-      console.log(`[server] cycle terminé (code ${code})`);
-      resolve({ code, lastRun });
-    });
-    child.on("error", (e) => {
-      running = false;
-      console.error(`[server] échec lancement enfant : ${e.message}`);
-      resolve({ error: e.message });
-    });
+    child.on("close", (code) => resolve({ code }));
+    child.on("error", (e) => resolve({ error: e.message }));
   });
+}
+
+// Un cycle = pull état partagé -> auto-reply -> push état modifié.
+async function runCycle(trigger) {
+  if (running) {
+    console.log(`[server] cycle déjà en cours, ignore (${trigger})`);
+    return { skipped: true };
+  }
+  running = true;
+  runs++;
+  console.log(`[server] === cycle auto-reply (${trigger}) #${runs} ===`);
+  try {
+    await pull(console); // CRM partagé (repo privé) -> data/crm/
+    const r = await spawnAutoReply(); // détecte / classe / répond / notifie
+    await push(console); // persiste anti-doublon + opt-out + statuts
+    lastResult = r.code ?? null;
+    console.log(`[server] cycle terminé (code ${lastResult})`);
+    return r;
+  } catch (e) {
+    console.error(`[server] erreur cycle : ${e.message}`);
+    return { error: e.message };
+  } finally {
+    running = false;
+    lastRun = new Date().toISOString();
+  }
 }
 
 const server = http.createServer((req, res) => {
@@ -70,7 +79,7 @@ const server = http.createServer((req, res) => {
   };
 
   if (url.pathname === "/health" || url.pathname === "/") {
-    return json(200, { ok: true, service: "digitalarc-autoreply", running, runs, lastRun, lastResult });
+    return json(200, { ok: true, service: "digitalarc-autoreply", running, runs, lastRun, lastResult, sync: syncConfigured(), crm: crmStats() });
   }
 
   if (url.pathname === "/run") {

@@ -9,6 +9,8 @@
   },
   "scripts": {
     "start": "node src/server.js",
+    "crm:pull": "node src/sync/crm-cli.js pull",
+    "crm:push": "node src/sync/crm-cli.js push",
     "scrape": "node src/scraping/apify-scraper.js --batch=5",
     "scrape:dry": "node src/scraping/apify-scraper.js --dry-run",
     "scrape:reset": "node src/scraping/apify-scraper.js --reset",
