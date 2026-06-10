@@ -68,7 +68,7 @@ function mailboxAccounts() {
 // Store de dedup propre a ce systeme (ne touche pas a celui de watch-replies)
 function loadProcessed() {
   const f = path.join(dataDir("crm"), "auto-replies-processed.json");
-  const set = new Set(fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : []);
+  const set = new Set(fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8").replace(/^﻿/, "")) : []);
   return { f, set };
 }
 

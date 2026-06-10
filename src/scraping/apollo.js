@@ -37,7 +37,7 @@ const API_KEY = process.env.APOLLO_API_KEY;
 const COUNTRY = process.env.APOLLO_COUNTRY || "CH";
 const CURRENCY = process.env.APOLLO_CURRENCY || "CHF";
 
-const SEARCH_URL = "https://api.apollo.io/api/v1/mixed_people/search";
+const SEARCH_URL = "https://api.apollo.io/api/v1/mixed_people/api_search";
 const MATCH_URL = "https://api.apollo.io/api/v1/people/match";
 
 // Suisse ROMANDE (francophone) uniquement -> garantit des emails en francais.
