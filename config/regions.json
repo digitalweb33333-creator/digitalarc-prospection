@@ -1,0 +1,66 @@
+{
+  "_comment": "Zones de prospection. Chaque 'city' devient un locationQuery Apify. Ajouter des villes pour elargir la couverture.",
+  "countries": [
+    {
+      "code": "FR",
+      "label": "France",
+      "language": "fr",
+      "cities": [
+        "Paris, France",
+        "Marseille, France",
+        "Lyon, France",
+        "Toulouse, France",
+        "Nice, France",
+        "Nantes, France",
+        "Montpellier, France",
+        "Strasbourg, France",
+        "Bordeaux, France",
+        "Lille, France",
+        "Rennes, France",
+        "Reims, France",
+        "Toulon, France",
+        "Grenoble, France",
+        "Dijon, France"
+      ]
+    },
+    {
+      "code": "CH",
+      "label": "Suisse",
+      "language": "fr",
+      "cities": [
+        "Geneve, Suisse",
+        "Lausanne, Suisse",
+        "Zurich, Suisse",
+        "Berne, Suisse",
+        "Bale, Suisse",
+        "Fribourg, Suisse",
+        "Neuchatel, Suisse",
+        "Sion, Suisse"
+      ]
+    },
+    {
+      "code": "BE",
+      "label": "Belgique",
+      "language": "fr",
+      "cities": [
+        "Bruxelles, Belgique",
+        "Liege, Belgique",
+        "Charleroi, Belgique",
+        "Namur, Belgique",
+        "Mons, Belgique",
+        "Anvers, Belgique",
+        "Gand, Belgique"
+      ]
+    },
+    {
+      "code": "LU",
+      "label": "Luxembourg",
+      "language": "fr",
+      "cities": [
+        "Luxembourg-Ville, Luxembourg",
+        "Esch-sur-Alzette, Luxembourg",
+        "Differdange, Luxembourg"
+      ]
+    }
+  ]
+}

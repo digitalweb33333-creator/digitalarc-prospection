@@ -1,0 +1,37 @@
+{
+  "name": "digitalarc-prospection",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Systeme de prospection automatique B2B pour Digitalarc.fr (Apify + Firecrawl + SMTP + Google Sheets)",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "scrape": "node src/scraping/apify-scraper.js --batch=5",
+    "scrape:dry": "node src/scraping/apify-scraper.js --dry-run",
+    "scrape:reset": "node src/scraping/apify-scraper.js --reset",
+    "bodacc": "node src/scraping/bodacc.js",
+    "apollo:dry": "node src/scraping/apollo.js",
+    "apollo": "node src/scraping/apollo.js --run",
+    "apollo:enrich": "node src/scraping/apollo.js --run --enrich",
+    "score": "node src/scoring/score-prospects.js",
+    "screenshot": "node src/screenshots/chatgpt-proof.js",
+    "email:gen": "node src/email/generate-emails.js",
+    "send:verify": "node src/email/send.js --verify",
+    "send:test": "node src/email/send.js --test",
+    "send:dry": "node src/email/send.js",
+    "send": "node src/email/send.js --send",
+    "followups": "node src/email/followups.js",
+    "followups:send": "node src/email/followups.js --send",
+    "watch-replies": "node src/email/watch-replies.js",
+    "make:setup": "node src/make/setup-scenarios.js"
+  },
+  "dependencies": {
+    "apify-client": "^2.12.0",
+    "dotenv": "^16.4.5",
+    "imapflow": "^1.3.7",
+    "nodemailer": "^8.0.10"
+  }
+}

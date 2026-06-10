@@ -1,0 +1,181 @@
+MACHINE GAMECHANGER DIGITALARC - INSTALLATION COMPLÈTE
+
+═══════════════════════════════════════
+COUCHE 1 — DÉTECTION CIBLES ULTRA CHAUDES
+═══════════════════════════════════════
+
+github.com/sales-skills/sales
+→ Score intention achat 0-100
+→ Social listening multi-plateformes
+
+github.com/199-biotechnologies/claude-skill-seo-geo-optimizer
+→ Détecte absence ChatGPT/Perplexity
+→ Score GEO/AEO du prospect
+
+github.com/Bhanunamikaze/Agentic-SEO-Skill
+→ 16 sous-skills audit SEO complet
+→ Détecte site obsolète, lent, non mobile
+
+═══════════════════════════════════════
+COUCHE 2 — SCORING QUALIFICATION
+═══════════════════════════════════════
+
+Score final sur 10 automatique :
+- Site avant 2020 = +2 pts
+- Pas HTTPS = +2 pts
+- Absent ChatGPT = +3 pts
+- Google Maps incomplet = +1 pt
+- Intention achat élevée = +2 pts
+→ Contacter uniquement les 7/10 et plus
+
+═══════════════════════════════════════
+COUCHE 3 — OFFRE IRRÉSISTIBLE
+═══════════════════════════════════════
+
+github.com/alexsmedile/hormozi-skills
+→ Framework $100M Offers Hormozi
+→ Hooks, angles, objections par profession
+
+github.com/wondelai/skills
+→ 25 skills Hormozi, Cialdini, persuasion
+→ Ancrage prix automatisé
+
+═══════════════════════════════════════
+COUCHE 4 — RÉDACTION EMAILS
+═══════════════════════════════════════
+
+github.com/BrianRWagner/ai-marketing-claude-code-skills
+→ Séquences cold email B2B personnalisées
+
+github.com/coreyhaines31/marketingskills
+→ Cold email + follow-up qui convertissent
+→ Copywriting CRO
+
+github.com/ericosiu/ai-marketing-skills
+→ Battle-tested pipelines millions revenus
+→ 50+ variants, expert scoring
+
+═══════════════════════════════════════
+COUCHE 5 — TRIPLE FILTRE HUMANISATION
+═══════════════════════════════════════
+
+github.com/jalaalrd/anti-ai-slop-writing
+→ Élimine 100% patterns IA détectables
+
+github.com/Aboudjem/humanizer-skill
+→ 43 patterns, score IA 0-100
+
+github.com/conorbronsdon/avoid-ai-writing
+→ Double pass, détecte ce que le premier rate
+
+RÈGLE ABSOLUE : chaque email passe par
+anti-ai-slop → humanizer → avoid-ai-writing
+avant envoi. Triple filtre obligatoire.
+
+═══════════════════════════════════════
+COUCHE 6 — EMAILS HTML PRO
+═══════════════════════════════════════
+
+github.com/irinabuht12-oss/email-campaigns-claude
+→ Templates HTML pro avec screenshot ChatGPT intégré
+
+github.com/OneWave-AI/claude-skills (email-template-generator)
+→ 172 skills production-ready
+
+═══════════════════════════════════════
+COUCHE 7 — CONTENU RÉSEAUX SOCIAUX
+═══════════════════════════════════════
+
+github.com/sergebulaev/linkedin-skills
+→ Hooks viraux 2026, zéro style IA
+
+github.com/AgriciDaniel/claude-blog
+→ Contenu optimisé Google ET citations IA
+
+═══════════════════════════════════════
+COUCHE 8 — SCRAPING COMPLET
+═══════════════════════════════════════
+
+github.com/brightdata/skills
+→ Bypass anti-bot, CAPTCHAs, JS rendering
+→ Scrape annuaires officiels bloqués
+
+Firecrawl (déjà configuré)
+→ Screenshots ChatGPT preuve visuelle
+
+Apify Google Maps (déjà configuré)
+→ Toutes professions France/Suisse/Belgique/Luxembourg
+→ Scrape par lots de 50 max (plan gratuit)
+
+BODACC API gratuite :
+→ URL : bodacc-datadila.opendatasoft.com/api/v2/catalog/datasets/annonces-commerciales/records
+→ Nouvelles entreprises France chaque jour
+→ Contacte les prospects le jour de leur création
+→ Zéro coût, données officielles
+
+═══════════════════════════════════════
+COUCHE 9 — SOCIAL LISTENING GRATUIT
+═══════════════════════════════════════
+
+Via Firecrawl + APIs gratuites :
+→ Groupes Facebook publics professionnels français
+→ Reddit API (r/france, r/entrepreneur, r/juridique)
+→ LinkedIn API gratuite
+
+Mots-clés surveillés :
+"cherche développeur web", "besoin site internet",
+"refonte de site", "créer mon site", "agence web",
+"pas de site web", "site vitrine"
+
+→ Professions cibles uniquement
+→ Tourne toutes les heures H24
+→ Alerte immédiate joachim33333@gmail.com
+→ Génère réponse personnalisée prête à envoyer
+→ Contacte le prospect dans les 30 minutes
+
+═══════════════════════════════════════
+COUCHE 10 — NOTIFICATIONS ET CRM
+═══════════════════════════════════════
+
+→ Quand prospect répond à un email de prospection :
+   transfert automatique vers joachim33333@gmail.com
+   avec contexte complet (nom, profession, ville,
+   email envoyé, score, historique)
+
+→ Dans chaque email : lien digitalarc.fr intégré
+   naturellement dans le texte, pas en signature froide
+
+→ Tout stocké dans Google Sheets CRM automatiquement
+
+═══════════════════════════════════════
+LOGIQUE GLOBALE DE LA MACHINE
+═══════════════════════════════════════
+
+Nuit : Brightdata + Apify + BODACC scrape nouvelles cibles
+Matin : scoring automatique toutes couches
+Filtrage strict 7/10 minimum
+Hormozi-skills génère l'angle d'offre par profession
+BrianRWagner génère l'email personnalisé
+Triple filtre humanisation obligatoire
+Firecrawl capture screenshot ChatGPT = preuve visuelle
+Email HTML pro avec screenshot intégré
+Rotation 4 boîtes SMTP Hostinger = 400 emails/jour
+Make orchestre relances J+3, J+7, J+14
+Social listening H24 détecte demandes temps réel
+Notifications Gmail instantanées sur réponses
+
+CONSTRUIS ET INSTALLE TOUT SANS DEMANDER DE CONFIRMATION.
+
+
+
+
+
+
+
+
+
+Voici mon token API Hostinger : 
+
+rTwKw4TKv6Y2TaBYETW0vIWElPEwhl0snVv2axjU3e0e1c87
+
+Configure DMARC p=quarantine via l'API DNS Hostinger maintenant.

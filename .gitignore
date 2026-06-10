@@ -1,0 +1,23 @@
+# Secrets
+.env
+.env.local
+
+# Dependencies
+node_modules/
+
+# Donnees (PII prospects + etat local) - JAMAIS committer (repo public)
+data/
+*.log
+
+# Scripts/lanceurs locaux specifiques machine
+run-auto-reply.sh
+run-auto-reply.ps1
+
+# Outillage local Claude (skills, agents, settings) - hors deploiement
+.claude/
+_*.sh
+_*.mjs
+
+# OS
+.DS_Store
+Thumbs.db

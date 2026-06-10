@@ -1,0 +1,71 @@
+{
+  "_comment": "Angles d'offre type Hormozi ($100M Offers) par metier (id). dream=resultat reve, hook=accroche, objection=objection levee, garantie=reduction du risque. Accents requis (emails FR).",
+  "default": {
+    "dream": "être le premier professionnel que vos futurs clients trouvent en ligne",
+    "hook": "vos concurrents captent les clients qui devraient être les vôtres",
+    "objection": "Pas le temps ? Je m'occupe de tout, vous validez en 10 minutes.",
+    "garantie": "Site livré en 7 jours ou c'est offert."
+  },
+  "offers": {
+    "medecins": {
+      "dream": "remplir votre agenda de nouveaux patients sans secrétariat débordé",
+      "hook": "vos patients cherchent un médecin sur Google et l'IA, plus dans l'annuaire",
+      "objection": "Vous êtes déjà complet ? Un site filtre et oriente les bons patients.",
+      "garantie": "Prise de rendez-vous en ligne intégrée, ou je vous rembourse."
+    },
+    "avocats": {
+      "dream": "attirer des dossiers qualifiés au lieu de courir après les clients",
+      "hook": "un client qui hésite entre deux cabinets choisit celui qui inspire confiance en ligne",
+      "objection": "La déontologie ? Le site reste sobre et conforme au barreau.",
+      "garantie": "Refonte conforme à la déontologie, satisfait ou refait."
+    },
+    "comptables": {
+      "dream": "signer des TPE/PME qui vous trouvent au lieu de la concurrence low-cost",
+      "hook": "les dirigeants comparent les cabinets en ligne avant le premier rendez-vous",
+      "objection": "Déjà beaucoup de clients ? Le site sélectionne les dossiers rentables.",
+      "garantie": "Formulaire de devis automatisé, ou c'est offert."
+    },
+    "architectes": {
+      "dream": "remplir votre carnet de projets grâce à votre portfolio en ligne",
+      "hook": "un architecte se juge sur ses réalisations, encore faut-il les montrer",
+      "objection": "Pas de belles photos ? On met en valeur ce que vous avez.",
+      "garantie": "Portfolio qui convertit, ou je le refais."
+    },
+    "agences_immo": {
+      "dream": "capter vendeurs et acheteurs avant que l'agence d'à côté ne le fasse",
+      "hook": "90% des projets immobiliers commencent par une recherche en ligne",
+      "objection": "Déjà sur les portails ? Votre marque doit exister hors SeLoger.",
+      "garantie": "Estimation en ligne intégrée, ou remboursé."
+    },
+    "coaches": {
+      "dream": "remplir vos sessions avec des clients qui vous prennent au sérieux",
+      "hook": "sans présence en ligne crédible, le prospect doute avant même le premier appel",
+      "objection": "Pas encore de notoriété ? Le site la construit pour vous.",
+      "garantie": "Page de réservation qui convertit, ou c'est offert."
+    },
+    "artisans": {
+      "dream": "être l'artisan qu'on appelle en premier dans votre secteur",
+      "hook": "le client appelle l'artisan le mieux référencé, pas le meilleur",
+      "objection": "Trop de boulot déjà ? Le site filtre les bons chantiers.",
+      "garantie": "Demande de devis en 1 clic, ou remboursé."
+    },
+    "notaires": {
+      "dream": "rassurer et attirer les clients avant même le premier rendez-vous",
+      "hook": "on vérifie la réputation en ligne d'une étude avant de confier un acte important",
+      "objection": "Profession réglementée ? Site sobre et conforme.",
+      "garantie": "Refonte conforme, satisfait ou refait."
+    },
+    "kines": {
+      "dream": "remplir votre planning de patients sans dépendre du bouche-à-oreille",
+      "hook": "les patients prennent rendez-vous via la recherche locale et les assistants IA",
+      "objection": "Déjà complet ? La prise de rendez-vous en ligne réduit les annulations.",
+      "garantie": "Agenda en ligne intégré, ou c'est offert."
+    },
+    "dentistes": {
+      "dream": "attirer de nouveaux patients sans secrétariat saturé",
+      "hook": "un patient choisit son dentiste sur sa visibilité et ses avis en ligne",
+      "objection": "Déjà complet ? Le site oriente vers les soins rentables.",
+      "garantie": "Prise de rendez-vous en ligne intégrée, ou remboursé."
+    }
+  }
+}

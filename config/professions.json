@@ -1,0 +1,86 @@
+{
+  "_comment": "10 professions cibles. 'keywords' = requetes Google Maps. 'label' (pluriel), 'label_singular' et 'client_noun' apparaissent dans les emails (accents requis).",
+  "professions": [
+    {
+      "id": "medecins",
+      "label": "médecins",
+      "label_singular": "médecin",
+      "client_noun": "patients",
+      "keywords": ["medecin generaliste", "cabinet medical"],
+      "angle": "patients qui cherchent un médecin proche via Google et les assistants IA"
+    },
+    {
+      "id": "avocats",
+      "label": "avocats",
+      "label_singular": "avocat",
+      "client_noun": "clients",
+      "keywords": ["avocat", "cabinet d'avocats"],
+      "angle": "clients qui comparent les cabinets en ligne avant de prendre rendez-vous"
+    },
+    {
+      "id": "comptables",
+      "label": "experts-comptables",
+      "label_singular": "expert-comptable",
+      "client_noun": "clients",
+      "keywords": ["expert-comptable", "cabinet comptable"],
+      "angle": "dirigeants de TPE/PME qui cherchent un comptable de confiance en ligne"
+    },
+    {
+      "id": "architectes",
+      "label": "architectes",
+      "label_singular": "architecte",
+      "client_noun": "clients",
+      "keywords": ["architecte", "cabinet d'architecture"],
+      "angle": "porteurs de projets qui jugent un architecte sur son portfolio en ligne"
+    },
+    {
+      "id": "agences_immo",
+      "label": "agences immobilières",
+      "label_singular": "agence immobilière",
+      "article_indef": "une",
+      "client_noun": "clients",
+      "keywords": ["agence immobiliere"],
+      "angle": "acheteurs et vendeurs qui choisissent leur agence d'abord en ligne"
+    },
+    {
+      "id": "coaches",
+      "label": "coachs",
+      "label_singular": "coach",
+      "client_noun": "clients",
+      "keywords": ["coach professionnel", "coaching"],
+      "angle": "prospects qui évaluent votre crédibilité via votre présence en ligne"
+    },
+    {
+      "id": "artisans",
+      "label": "artisans",
+      "label_singular": "artisan",
+      "client_noun": "clients",
+      "keywords": ["plombier", "electricien", "menuisier", "artisan"],
+      "angle": "clients qui appellent l'artisan le mieux référencé sur Google"
+    },
+    {
+      "id": "notaires",
+      "label": "notaires",
+      "label_singular": "notaire",
+      "client_noun": "clients",
+      "keywords": ["notaire", "etude notariale"],
+      "angle": "clients qui vérifient la réputation en ligne d'une étude avant de la contacter"
+    },
+    {
+      "id": "kines",
+      "label": "kinésithérapeutes",
+      "label_singular": "kinésithérapeute",
+      "client_noun": "patients",
+      "keywords": ["kinesitherapeute", "cabinet de kinesitherapie"],
+      "angle": "patients qui prennent rendez-vous via la recherche locale et les assistants IA"
+    },
+    {
+      "id": "dentistes",
+      "label": "dentistes",
+      "label_singular": "dentiste",
+      "client_noun": "patients",
+      "keywords": ["dentiste", "cabinet dentaire"],
+      "angle": "patients qui choisissent leur dentiste sur sa visibilité et ses avis en ligne"
+    }
+  ]
+}

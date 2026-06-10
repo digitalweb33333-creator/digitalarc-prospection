@@ -1,0 +1,44 @@
+{
+  "_comment": "Bareme de scoring sur 10. Chaque critere rapporte des points si le PROBLEME est present (= opportunite pour Digitalarc). On garde les prospects >= min_score.",
+  "min_score": 7,
+  "max_score": 10,
+  "criteria": {
+    "pas_de_site": {
+      "points": 5,
+      "phase": "scraping",
+      "description": "Aucun site web (meilleur prospect pour une agence web : 5 pts -> qualifie des qu'un 2e signal est present)"
+    },
+    "pas_https": {
+      "points": 2,
+      "phase": "enrichment",
+      "description": "Le site existe mais n'est pas en HTTPS (http://)"
+    },
+    "site_avant_2020": {
+      "points": 2,
+      "phase": "enrichment",
+      "description": "Site visiblement ancien (copyright < 2020, pas de mobile, tech datee)"
+    },
+    "absent_chatgpt": {
+      "points": 3,
+      "phase": "screenshot",
+      "description": "Les IA (Perplexity/ChatGPT) ne citent pas l'entreprise (preuve par screenshot Firecrawl)"
+    },
+    "gmb_incomplet": {
+      "points": 1,
+      "phase": "scraping",
+      "description": "Fiche Google incomplete (horaires/photos/description/avis manquants)"
+    },
+    "intention_achat": {
+      "points": 2,
+      "phase": "scraping",
+      "description": "Signal d'intention fort : entreprise nouvellement creee (BODACC) -> a besoin de tout, dont un site"
+    }
+  },
+  "gmb_incomplet_rules": {
+    "_comment": "Sous-criteres qui declenchent gmb_incomplet (au moins un suffit)",
+    "max_reviews": 10,
+    "max_images": 5,
+    "require_opening_hours": true,
+    "require_phone": true
+  }
+}
