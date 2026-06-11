@@ -122,6 +122,8 @@ async function main() {
       text: "Ceci est un email de test envoye par le systeme de prospection Digitalarc. La rotation SMTP fonctionne.",
     });
     log.ok(`Envoye via ${boxes[0].user} (id: ${info.messageId})`);
+    log.ok(`Reponse SMTP brute : ${info.response}`);
+    log.info(`accepted: ${JSON.stringify(info.accepted)} | rejected: ${JSON.stringify(info.rejected)}`);
     return;
   }
 
@@ -185,15 +187,28 @@ async function main() {
         html,
         attachments,
       });
+      // nodemailer ne resout que si le serveur a accepte (reponse 2xx).
+      // On capture la reponse SMTP brute + accepted/rejected (preuve + audit).
+      const rejected = Array.isArray(info.rejected) ? info.rejected : [];
+      if (rejected.length) {
+        // accepte par le serveur mais 0 destinataire valide -> traite comme echec
+        p.email_status = "rejected";
+        p.last_error = `SMTP rejected: ${rejected.join(", ")} | ${info.response || ""}`;
+        log.error(`  REJETE ${p.email_to} : ${info.response || "destinataire refuse"}`);
+        continue;
+      }
       p.email_status = "sent";
       p.sent_at = new Date().toISOString();
       p.mailbox_used = box.user;
+      p.smtp_response = info.response || "";              // ex: "250 2.0.0 Ok: queued as ..."
+      p.smtp_message_id = info.messageId || "";
+      p.smtp_accepted = Array.isArray(info.accepted) ? info.accepted.length : null;
       p.followup_stage = 0;
       scheduleFollowups(p);
       recordSend(box.user);
       perBox[box.user] = (perBox[box.user] || 0) + 1;
       sent++;
-      log.ok(`  ${box.user} -> ${p.email_to} (id ${info.messageId})`);
+      log.ok(`  ${box.user} -> ${p.email_to} (id ${info.messageId}) | SMTP: ${info.response || "accepte"}`);
       await pushToMake({ ...p, event: "sent" }, MAKE_WEBHOOK);
       // petit delai anti-spam
       await new Promise((r) => setTimeout(r, 1500));

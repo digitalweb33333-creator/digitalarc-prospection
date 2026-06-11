@@ -8,8 +8,13 @@
 //   - passe le prospect en email_status="replied" (stoppe les relances)
 //   - si le corps contient STOP/desinscription -> liste de suppression
 //
-// Dedup par Message-ID (data/crm/replies-processed.json) : une reponse
-// n'alerte qu'une fois, meme si le script tourne en boucle.
+// Detecte aussi les BOUNCES / NDR (mailer-daemon, postmaster, objets de retour) :
+//   - retrouve le destinataire en echec dans le corps du NDR
+//   - l'ajoute a la liste de suppression, passe la fiche en email_status="bounced"
+//     et neutralise ses relances ; un resume unique est envoye a NOTIFY_EMAIL.
+//
+// Dedup par Message-ID (data/crm/replies-processed.json) : une reponse OU un
+// bounce n'est traite qu'une fois, meme si le script tourne en boucle.
 //
 // A lancer periodiquement (Task Scheduler / cron, ex: toutes les 15 min).
 //
@@ -34,6 +39,11 @@ const SCAN_DAYS = Number(process.env.REPLY_SCAN_DAYS || 7);
 const MAKE_WEBHOOK = process.env.MAKE_WEBHOOK_CRM || "";
 
 const STOP_RE = /\b(stop|d[ée]sinscri|d[ée]sabonn|unsubscribe|ne plus.{0,15}contact)/i;
+
+// Detection des bounces / NDR (non-delivery reports). On reconnait l'expediteur
+// systeme (mailer-daemon/postmaster) OU un objet typique de retour.
+const BOUNCE_FROM_RE = /mailer-daemon|postmaster|mail delivery (sub)?system|delivery subsystem/i;
+const BOUNCE_SUBJ_RE = /undeliver|delivery (failed|status|incomplete|notification)|returned (mail|to sender)|failure notice|mail delivery failed|non[- ]?remis|message could not be delivered/i;
 
 // Garde-fou : empeche une boite lente/injoignable de bloquer tout le scan
 const withTimeout = (p, ms, label) =>
@@ -117,7 +127,36 @@ async function snippet(client, uid) {
   }
 }
 
-async function scanMailbox(account, crm, byEmail, processed, alerts) {
+// Source complete d'un message (les NDR mettent le destinataire en echec dans
+// une partie message/delivery-status, hors du 1er bloc texte).
+async function fullSource(client, uid) {
+  try {
+    const msg = await client.fetchOne(uid, { source: true }, { uid: true });
+    return msg && msg.source ? msg.source.toString("utf8") : "";
+  } catch {
+    return "";
+  }
+}
+
+// Depuis le corps d'un NDR, retrouve le(s) destinataire(s) en echec qui font
+// partie de nos prospects contactes (byEmail). Priorise les en-tetes standard,
+// avec repli sur toute adresse contactee presente dans le corps.
+function extractFailedRecipients(body, byEmail) {
+  const found = new Set();
+  const re = /(?:final-recipient|original-recipient|x-failed-recipients|failed recipient)\s*:?\s*(?:rfc822\s*;)?\s*<?([a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,})>?/gi;
+  let m;
+  while ((m = re.exec(body))) {
+    const a = m[1].toLowerCase();
+    if (byEmail.has(a)) found.add(a);
+  }
+  if (!found.size) {
+    const low = body.toLowerCase();
+    for (const a of byEmail.keys()) if (a && low.includes(a)) found.add(a);
+  }
+  return [...found];
+}
+
+async function scanMailbox(account, crm, byEmail, processed, alerts, bounces) {
   const client = new ImapFlow({
     host: IMAP_HOST,
     port: IMAP_PORT,
@@ -137,24 +176,27 @@ async function scanMailbox(account, crm, byEmail, processed, alerts) {
     // PASSE 1 : collecte des correspondances (NE PAS lancer d'autre commande
     // IMAP pendant l'iteration fetch -> imapflow serialise, sinon deadlock)
     const matches = [];
+    const bounceCands = [];
     for await (const m of client.fetch({ since }, { uid: true, envelope: true })) {
       scanned++;
       const env = m.envelope || {};
       const from = (env.from && env.from[0] && env.from[0].address || "").toLowerCase();
+      const subject = env.subject || "";
       const msgId = env.messageId || `${account.user}:${m.uid}`;
-      if (!from || processed.set.has(msgId)) continue;
+      if (processed.set.has(msgId)) continue;
+      const date = env.date ? new Date(env.date).toISOString() : "";
+      // Bounce/NDR : expediteur systeme, ou objet de retour venant d'un non-prospect.
+      const isBounce = BOUNCE_FROM_RE.test(from) || (BOUNCE_SUBJ_RE.test(subject) && !byEmail.has(from));
+      if (isBounce) {
+        bounceCands.push({ uid: m.uid, msgId, from, subject, date });
+        continue;
+      }
+      if (!from) continue;
       const prospect = byEmail.get(from);
       if (!prospect) continue;
-      matches.push({
-        uid: m.uid,
-        msgId,
-        prospect,
-        subject: env.subject || "(sans objet)",
-        date: env.date ? new Date(env.date).toISOString() : "",
-        from,
-      });
+      matches.push({ uid: m.uid, msgId, prospect, subject: subject || "(sans objet)", date, from });
     }
-    // PASSE 2 : telechargement des corps APRES la boucle fetch (STOP detection)
+    // PASSE 2 : telechargement des corps APRES la boucle fetch
     for (const mt of matches) {
       const body = await snippet(client, mt.uid);
       const isStop = STOP_RE.test(mt.subject) || STOP_RE.test(body);
@@ -164,6 +206,12 @@ async function scanMailbox(account, crm, byEmail, processed, alerts) {
         isStop,
         msgId: mt.msgId,
       });
+    }
+    // PASSE 2bis : NDR -> on retrouve le(s) destinataire(s) en echec
+    for (const bc of bounceCands) {
+      const src = await fullSource(client, bc.uid);
+      const emails = extractFailedRecipients(src, byEmail);
+      bounces.push({ msgId: bc.msgId, mailbox: account.user, ndrFrom: bc.from, subject: bc.subject, date: bc.date, emails });
     }
   } finally {
     lock.release();
@@ -195,10 +243,11 @@ async function main() {
 
   const processed = loadProcessed();
   const alerts = [];
+  const bounces = [];
   for (const acc of accounts) {
     try {
       const n = await withTimeout(
-        scanMailbox(acc, crm, byEmail, processed, alerts),
+        scanMailbox(acc, crm, byEmail, processed, alerts, bounces),
         35000,
         acc.user
       );
@@ -208,52 +257,96 @@ async function main() {
     }
   }
 
-  if (!alerts.length) {
-    log.ok("Aucune nouvelle reponse de prospect.");
+  if (!alerts.length && !bounces.length) {
+    log.ok("Aucune nouvelle reponse ni bounce.");
     return;
   }
 
-  log.step(`${alerts.length} reponse(s) de prospect detectee(s)`);
   const { from, tx } = alertTransport();
 
-  for (const a of alerts) {
-    const { prospect, msg, isStop, msgId } = a;
-    if (DRY) {
-      log.info(`  [DRY] ${prospect.title} a repondu (${msg.from})${isStop ? " [STOP]" : ""}`);
-      continue;
-    }
-    // Marque l'etat
-    if (isStop) {
-      addSuppression(prospect.email_to);
-      prospect.email_status = "unsubscribed";
-      log.warn(`  STOP : ${prospect.email_to} -> suppression`);
-    } else {
-      prospect.email_status = "replied";
-    }
-    prospect.replied_at = msg.date;
+  // --- Reponses de prospects ---
+  if (alerts.length) {
+    log.step(`${alerts.length} reponse(s) de prospect detectee(s)`);
+    for (const a of alerts) {
+      const { prospect, msg, isStop, msgId } = a;
+      if (DRY) {
+        log.info(`  [DRY] ${prospect.title} a repondu (${msg.from})${isStop ? " [STOP]" : ""}`);
+        continue;
+      }
+      // Marque l'etat
+      if (isStop) {
+        addSuppression(prospect.email_to);
+        prospect.email_status = "unsubscribed";
+        log.warn(`  STOP : ${prospect.email_to} -> suppression`);
+      } else {
+        prospect.email_status = "replied";
+      }
+      prospect.replied_at = msg.date;
 
-    // Alerte
-    const { subject, text } = buildAlert(prospect, msg);
-    try {
-      await tx.sendMail({
-        from: `"Digitalarc Alertes" <${from}>`,
-        to: NOTIFY,
-        replyTo: prospect.email_to,
-        subject: isStop ? `[STOP] ${prospect.title}` : subject,
-        text,
-      });
-      log.ok(`  Alerte envoyee -> ${NOTIFY} : ${prospect.title}`);
-      await pushToMake({ ...prospect, event: isStop ? "unsubscribed" : "replied" }, MAKE_WEBHOOK);
-    } catch (e) {
-      log.error(`  Echec alerte ${prospect.title} : ${e.message}`);
+      // Alerte
+      const { subject, text } = buildAlert(prospect, msg);
+      try {
+        await tx.sendMail({
+          from: `"Digitalarc Alertes" <${from}>`,
+          to: NOTIFY,
+          replyTo: prospect.email_to,
+          subject: isStop ? `[STOP] ${prospect.title}` : subject,
+          text,
+        });
+        log.ok(`  Alerte envoyee -> ${NOTIFY} : ${prospect.title}`);
+        await pushToMake({ ...prospect, event: isStop ? "unsubscribed" : "replied" }, MAKE_WEBHOOK);
+      } catch (e) {
+        log.error(`  Echec alerte ${prospect.title} : ${e.message}`);
+      }
+      processed.set.add(msgId);
     }
-    processed.set.add(msgId);
   }
 
-  saveCrm(crm);
-  fs.writeFileSync(processed.f, JSON.stringify([...processed.set], null, 2), "utf8");
+  // --- Bounces / NDR : auto-suppression + statut "bounced" + relances stoppees ---
+  const bouncedEmails = [];
+  if (bounces.length) {
+    log.step(`${bounces.length} NDR/bounce(s) detecte(s)`);
+    for (const b of bounces) {
+      if (DRY) {
+        log.info(`  [DRY] BOUNCE via ${b.ndrFrom} -> ${b.emails.join(", ") || "(non rattache a un prospect)"}`);
+        continue;
+      }
+      for (const email of b.emails) {
+        addSuppression(email);
+        const prospect = byEmail.get(email);
+        if (prospect && ["sent", "followed_up"].includes(prospect.email_status)) {
+          prospect.email_status = "bounced";
+          prospect.bounced_at = b.date || new Date().toISOString();
+          if (Array.isArray(prospect.followups)) prospect.followups.forEach((f) => { f.sent = true; });
+          await pushToMake({ ...prospect, event: "bounced" }, MAKE_WEBHOOK);
+        }
+        bouncedEmails.push(email);
+        log.warn(`  BOUNCE : ${email} -> suppression (${b.ndrFrom})`);
+      }
+      processed.set.add(b.msgId); // meme un NDR non rattache est marque traite
+    }
+    // Resume unique a NOTIFY (evite 1 mail par bounce)
+    if (bouncedEmails.length && !DRY) {
+      try {
+        await tx.sendMail({
+          from: `"Digitalarc Alertes" <${from}>`,
+          to: NOTIFY,
+          subject: `[BOUNCES] ${bouncedEmails.length} adresse(s) retiree(s) automatiquement`,
+          text: `Ces adresses ont bounce (NDR recu) et ont ete ajoutees a la liste de suppression — elles ne seront plus relancees :\n\n- ${bouncedEmails.join("\n- ")}`,
+        });
+        log.ok(`  Resume bounces envoye -> ${NOTIFY}`);
+      } catch (e) {
+        log.error(`  Echec resume bounces : ${e.message}`);
+      }
+    }
+  }
+
+  if (!DRY) {
+    saveCrm(crm);
+    fs.writeFileSync(processed.f, JSON.stringify([...processed.set], null, 2), "utf8");
+  }
   log.step("Termine");
-  log.ok(`Alertes : ${alerts.filter((a) => !DRY).length} | dedup store : ${processed.set.size} msg`);
+  log.ok(`Reponses : ${DRY ? 0 : alerts.length} | Bounces : ${bouncedEmails.length} | dedup store : ${processed.set.size} msg`);
 }
 
 main().catch((e) => {
