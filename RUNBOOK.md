@@ -36,6 +36,36 @@ npm run followups:send       # envoi réel
 npm run watch-replies        # scanne les 4 boîtes IMAP, alerte joachim33333@outlook.fr
 ```
 
+## Import Apollo CSV (chemin alternatif aux étapes 1-2)
+
+Apollo Basic ne donne pas les emails par API, mais **l'export in-app du site Apollo
+oui**. Ce chemin remplace le scraping (étapes 1-2) : les contacts arrivent déjà
+qualifiés (score 7), donc on enchaîne directement sur `email:gen`.
+
+```bash
+# 0. Depuis Apollo (site) : exporter les contacts en CSV vers le dossier
+#    Téléchargements Windows (un ou plusieurs fichiers apollo-contacts-export*.csv).
+
+# 1. Fusionner les exports en un seul CSV dédupliqué par email (préfère Verified)
+npm run merge:apollo -- --dir="C:\Users\joach\Downloads"
+#    -> data/raw/apollo-merged-<date>.csv  (ou passer les chemins un par un)
+
+# 2. Importer dans le CRM (Verified only + FILTRE ICP automatique)
+npm run import:csv -- "data/raw/apollo-merged-<date>.csv"
+#    Filtre ICP par défaut : <=20 employés + 1 seul contact par cabinet/domaine
+#    (préfère le décideur). Écarte les grosses boîtes et le multi-contacts.
+#    Flags : --no-icp | --max-employees=N | --no-dedupe-domain | --keep-unknown-employees
+#            --all-emails (inclut les non-Verified, déconseillé en warm-up)
+
+# 3. Reprendre le pipeline normal à partir de la génération des emails
+npm run email:gen            # qualifiés (score 7) avec email
+npm run send:dry             # puis npm run send (respecte les caps/warm-up)
+```
+
+> Qualité des exports : les recherches Apollo larges contiennent beaucoup de bruit
+> (gros comptes type Pfizer, contacts non-décideurs). Le filtre ICP de `import:csv`
+> nettoie ça automatiquement ; vérifie le récap "Filtre ICP" affiché à l'import.
+
 ### Planifier la détection des réponses (toutes les 15 min)
 
 ```powershell
@@ -81,14 +111,27 @@ schtasks /Create /SC DAILY /ST 09:00 /TN "Digitalarc Relances" `
 ## 2 réglages manuels restants
 
 ### A. Google Sheets — ✅ CONFIGURÉ (2026-06-09, via API Make)
-Le scénario **"Digitalarc CRM Sync"** (id 6097854) est configuré et **ACTIF** :
+Le scénario **"Digitalarc CRM Sync"** (id 6097854) est **ACTIF** :
 webhook → Google Sheets · Add a Row, connexion Google id 8081634 (OAuth valide),
-spreadsheet `GOOGLE_SHEETS_ID`, onglet "Feuille 1". Colonnes A→G mappées :
-Nom, Email, Métier, Ville, Score, Statut, Date. Testé OK (exécution Make succès, 2 ops).
-- Dès lors, chaque envoi/relance Node (`pushToMake`) écrit la ligne dans le Sheet.
-- Si l'onglet n'est pas "Feuille 1", corriger dans le module Make (ou env `MAKE_SHEET_TAB`).
-- Penser à ajouter une ligne d'en-tête A1:G1 dans le Sheet (Nom | Email | Métier | Ville | Score | Statut | Date).
+spreadsheet `GOOGLE_SHEETS_ID`. Colonnes A→G mappées :
+Nom, Email, Métier, Ville, Score, Statut, Date.
+- Chaque envoi/relance Node (`pushToMake`) écrit la ligne dans le Sheet.
 - Blueprint de référence : `data/make/blueprint-crm-sync.json`.
+
+**Onglet cible = `prospects`** (env `MAKE_SHEET_TAB=prospects`).
+⚠️ Make **ne crée pas** l'onglet : il doit exister, sinon le scénario tombe en
+erreur (`Unable to parse range: 'prospects'!A1`) et se désactive au bout de
+3 erreurs (`maxErrors=3`). État live actuel : onglet **"Feuille 1"** tant que
+l'onglet `prospects` n'a pas été créé.
+
+Pour basculer le scénario sur un autre onglet :
+1. Crée l'onglet dans le Sheet (ex. `prospects`), ligne 1 :
+   `Nom | Email | Métier | Ville | Score | Statut | Date`.
+2. Lance **`npm run make:tab`** (lit `MAKE_SHEET_TAB`).
+   Le script `src/make/set-sheet-tab.js` bascule l'onglet, envoie une ligne test,
+   vérifie l'exécution Make, et **revient automatiquement** à l'onglet précédent
+   si l'onglet cible n'existe pas (aucun risque de casser le logging).
+   Options : `--tab=<nom>` (force un onglet), `--no-test` (pas de ligne test).
 
 > Alternative sans Make : `data/crm/crm.csv` est régénéré à chaque étape —
 > tu peux l'importer directement dans Google Sheets (Fichier > Importer).

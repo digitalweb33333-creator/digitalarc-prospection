@@ -23,6 +23,7 @@ const TOKEN = process.env.MAKE_API_TOKEN;
 const ZONE = process.env.MAKE_ZONE || "eu1";
 const TEAM = Number(process.env.MAKE_TEAM_ID || 1898223);
 const SHEET_ID = process.env.GOOGLE_SHEETS_ID || "";
+const SHEET_TAB = process.env.MAKE_SHEET_TAB || "prospects"; // onglet cible du Sheet
 const B = `https://${ZONE}.make.com/api/v2`;
 const H = { Authorization: `Token ${TOKEN}`, "Content-Type": "application/json" };
 
@@ -131,7 +132,7 @@ function fullBlueprint(hookId) {
         parameters: { __IMTCONN__: "<<CONNECTER_GOOGLE>>" },
         mapper: {
           mode: "select", insertUnformatted: false, valueInputOption: "USER_ENTERED",
-          spreadsheetId: SHEET_ID, sheetId: "Feuille 1", includesHeaders: true,
+          spreadsheetId: SHEET_ID, sheetId: SHEET_TAB, includesHeaders: true,
           values,
         },
         metadata: { designer: { x: 300, y: 0 } },
