@@ -349,7 +349,20 @@ async function main() {
   log.ok(`Reponses : ${DRY ? 0 : alerts.length} | Bounces : ${bouncedEmails.length} | dedup store : ${processed.set.size} msg`);
 }
 
-main().catch((e) => {
-  log.error(e.stack || e.message);
-  process.exit(1);
-});
+// Garde-fou : une connexion IMAP lente/injoignable peut laisser des sockets
+// ouverts qui empechent node de se terminer. On force une sortie nette.
+//  - watchdog global : sortie forcee si le run depasse WATCH_MAX_MS (def. 240s)
+//  - sortie explicite des que main() est resolu (n'attend pas les handles ouverts)
+const WATCH_MAX_MS = Number(process.env.WATCH_MAX_MS || 240000);
+const watchdog = setTimeout(() => {
+  log.error(`Watchdog ${WATCH_MAX_MS}ms atteint -> sortie forcee.`);
+  process.exit(0);
+}, WATCH_MAX_MS);
+watchdog.unref();
+
+main()
+  .then(() => process.exit(0))
+  .catch((e) => {
+    log.error(e.stack || e.message);
+    process.exit(1);
+  });
