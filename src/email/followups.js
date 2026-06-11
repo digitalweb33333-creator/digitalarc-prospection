@@ -35,7 +35,8 @@ const profById = Object.fromEntries(professions.map((p) => [p.id, p]));
 function followupBody(p, stage) {
   const site = process.env.SENDER_WEBSITE || "https://digitalarc.fr";
   const link = site.replace(/^https?:\/\//, "");
-  const optoutUrl = `${site}/stop?e=${encodeURIComponent(p.email_to)}`;
+  // Opt-out fonctionnel : mailto pre-rempli STOP (capte par watch-replies).
+  const optoutUrl = `mailto:${process.env.SENDER_REPLY_TO || "contact@digitalarc.fr"}?subject=STOP`;
   const ville = p.locality || "votre ville";
   const sig = `Joachim\nDigitalarc — ${link}`;
 
@@ -56,7 +57,7 @@ function followupBody(p, stage) {
   };
 
   const body = messages[stage];
-  const footer = `Pour ne plus être contacté : répondez STOP ou ${optoutUrl}`;
+  const footer = `Pour ne plus être contacté, répondez simplement STOP à cet email.`;
   const text = `${body}\n\n${sig}\n\n---\n${footer}`;
 
   const para = (s) => s.split("\n\n").map((blk) => `<p>${blk.replace(/\n/g, "<br>")}</p>`).join("\n");

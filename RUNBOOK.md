@@ -136,10 +136,20 @@ Pour basculer le scénario sur un autre onglet :
 > Alternative sans Make : `data/crm/crm.csv` est régénéré à chaque étape —
 > tu peux l'importer directement dans Google Sheets (Fichier > Importer).
 
-### B. Page de désinscription (RGPD)
-Les emails contiennent un lien `https://digitalarc.fr/stop?e=...`. Crée une page
-`/stop` sur ton site qui enregistre l'opt-out, puis ajoute l'email à la liste :
-`data/crm/suppression.json` (ou via un scénario Make). Voir `COMPLIANCE.md`.
+### B. Désinscription (RGPD) — ✅ via réponse STOP
+L'opt-out passe par le **chemin réponse STOP**, déjà fonctionnel :
+- chaque email finit par « répondez STOP à cet email » (texte) et un lien HTML
+  `mailto:contact@digitalarc.fr?subject=STOP` (« cliquez ici ») ;
+- `watch-replies.js` (toutes les 15 min) détecte STOP/désinscription dans l'objet
+  ou le corps → `addSuppression()` → `data/crm/suppression.json`, statut
+  `unsubscribed`, plus jamais recontacté. Idem côté Render (`auto-reply.js`).
+
+> ⚠️ L'ancienne page web `https://digitalarc.fr/stop` est **inerte** (page WP
+> statique : aucun formulaire/endpoint, n'écrit PAS dans `suppression.json`). On
+> ne s'appuie donc plus dessus. Pour un vrai opt-out web (1 clic sans envoyer
+> d'email), il faudrait : page `/stop` → webhook Make → onglet Sheet "optout" →
+> étape Node de fusion dans `suppression.json` (à faire quand le sync Render sera
+> rétabli). Voir `COMPLIANCE.md`.
 
 ## Coût Apify (maîtrisé automatiquement)
 

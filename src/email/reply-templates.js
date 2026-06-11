@@ -17,6 +17,7 @@ const profById = Object.fromEntries(professions.map((p) => [p.id, p]));
 const sender = {
   website: process.env.SENDER_WEBSITE || "https://digitalarc.fr",
   logoUrl: process.env.SENDER_LOGO_URL || "",
+  replyTo: process.env.SENDER_REPLY_TO || "contact@digitalarc.fr",
 };
 
 // "Re: ..." propre (sans empiler les Re:)
@@ -148,9 +149,10 @@ export function buildReply(category, p, { incomingSubject } = {}) {
   if (raw === null) return null; // categorie non auto-repondue
 
   const link = sender.website.replace(/^https?:\/\//, "");
-  const optoutUrl = `${sender.website}/stop?e=${encodeURIComponent(p.email_to || "")}`;
+  // Opt-out fonctionnel : mailto pre-rempli STOP (capte par watch-replies).
+  const optoutUrl = `mailto:${sender.replyTo}?subject=STOP`;
   const sig = `Joachim\nDigitalarc — ${link}`;
-  const footer = `Pour ne plus être contacté : répondez STOP ou ${optoutUrl}`;
+  const footer = `Pour ne plus être contacté, répondez simplement STOP à cet email.`;
 
   const body = humanize(raw).text;
   const subject = reSubject(incomingSubject || p.email_subject);

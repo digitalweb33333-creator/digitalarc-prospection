@@ -54,8 +54,10 @@ function buildBody(p) {
   const prof = profById[p.profession] || { angle: "vos clients vous cherchent en ligne", label: "professionnel" };
   const offer = offers[p.profession] || defaultOffer;
   const problems = problemsSentence(p.score_detail);
-  const optoutToken = encodeURIComponent(p.email_to || p.place_id);
-  const optoutUrl = `${sender.website}/stop?e=${optoutToken}`;
+  // Opt-out FONCTIONNEL : une reponse "STOP" est captee par watch-replies ->
+  // suppression.json. Le lien HTML est donc un mailto pre-rempli STOP (et non
+  // une page web inerte qui n'enregistrait rien). Voir COMPLIANCE.md.
+  const optoutUrl = `mailto:${sender.replyTo}?subject=STOP`;
   const link = sender.website.replace(/^https?:\/\//, "");
   const hasShot = Boolean(p.screenshot_url);
 
@@ -114,7 +116,7 @@ Digitalarc — ${link}
 
 ---
 Vous recevez cet email car votre activité est référencée publiquement.
-Pour ne plus être contacté : répondez STOP ou ${optoutUrl}
+Pour ne plus être contacté, répondez simplement STOP à cet email.
 ${sender.company}`
   ).text;
 
