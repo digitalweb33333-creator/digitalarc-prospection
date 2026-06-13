@@ -8,6 +8,11 @@
 //   - passe le prospect en email_status="replied" (stoppe les relances)
 //   - si le corps contient STOP/desinscription -> liste de suppression
 //
+// IGNORE les auto-repondeurs d'absence (OOO) : un "Re: Absence", une reponse
+// automatique (en-tete Auto-Submitted, objet/corps FR-EN) N'EST PAS une vraie
+// reponse -> on ne change pas le statut (les relances continuent), pas d'alerte,
+// juste un champ ooo_detected_at et le message marque traite (dedup). STOP prime.
+//
 // Detecte aussi les BOUNCES / NDR (mailer-daemon, postmaster, objets de retour) :
 //   - retrouve le destinataire en echec dans le corps du NDR
 //   - l'ajoute a la liste de suppression, passe la fiche en email_status="bounced"
@@ -29,6 +34,7 @@ import nodemailer from "nodemailer";
 import { log } from "../lib/logger.js";
 import { dataDir, parseArgs } from "../lib/config.js";
 import { loadCrm, saveCrm, addSuppression, pushToMake } from "../lib/crm.js";
+import { isAutoResponder } from "./ooo.js";
 
 const args = parseArgs();
 const DRY = Boolean(args["dry-run"]);
@@ -127,6 +133,16 @@ async function snippet(client, uid) {
   }
 }
 
+// En-tetes bruts d'un message (pour la detection OOO via Auto-Submitted, etc.)
+async function rawHeaders(client, uid) {
+  try {
+    const msg = await client.fetchOne(uid, { headers: true }, { uid: true });
+    return msg && msg.headers ? msg.headers.toString("utf8") : "";
+  } catch {
+    return "";
+  }
+}
+
 // Source complete d'un message (les NDR mettent le destinataire en echec dans
 // une partie message/delivery-status, hors du 1er bloc texte).
 async function fullSource(client, uid) {
@@ -196,14 +212,21 @@ async function scanMailbox(account, crm, byEmail, processed, alerts, bounces) {
       if (!prospect) continue;
       matches.push({ uid: m.uid, msgId, prospect, subject: subject || "(sans objet)", date, from });
     }
-    // PASSE 2 : telechargement des corps APRES la boucle fetch
+    // PASSE 2 : telechargement des corps + en-tetes APRES la boucle fetch
     for (const mt of matches) {
       const body = await snippet(client, mt.uid);
       const isStop = STOP_RE.test(mt.subject) || STOP_RE.test(body);
+      // OOO : seulement si ce n'est pas un STOP (STOP prime, conformite RGPD).
+      let isOOO = false;
+      if (!isStop) {
+        const hdr = await rawHeaders(client, mt.uid);
+        isOOO = isAutoResponder({ subject: mt.subject, body, headers: hdr });
+      }
       alerts.push({
         prospect: mt.prospect,
         msg: { from: mt.from, subject: mt.subject, date: mt.date, mailbox: account.user },
         isStop,
+        isOOO,
         msgId: mt.msgId,
       });
     }
@@ -265,12 +288,25 @@ async function main() {
   const { from, tx } = alertTransport();
 
   // --- Reponses de prospects ---
+  let repliedCount = 0;
+  let oooCount = 0;
   if (alerts.length) {
-    log.step(`${alerts.length} reponse(s) de prospect detectee(s)`);
+    log.step(`${alerts.length} message(s) entrant(s) de prospect detecte(s)`);
     for (const a of alerts) {
-      const { prospect, msg, isStop, msgId } = a;
+      const { prospect, msg, isStop, isOOO, msgId } = a;
       if (DRY) {
-        log.info(`  [DRY] ${prospect.title} a repondu (${msg.from})${isStop ? " [STOP]" : ""}`);
+        const tag = isStop ? " [STOP]" : isOOO ? " [OOO/absence -> ignore]" : "";
+        log.info(`  [DRY] ${prospect.title} (${msg.from})${tag}`);
+        continue;
+      }
+      // Auto-repondeur d'absence : ce n'est PAS une vraie reponse.
+      // On NE change PAS email_status (les relances continuent), pas d'alerte,
+      // mais on marque le message traite pour ne pas le re-scanner en boucle.
+      if (isOOO && !isStop) {
+        prospect.ooo_detected_at = msg.date || new Date().toISOString();
+        oooCount++;
+        log.info(`  OOO/absence : ${prospect.email_to} -> ignore (relances maintenues)`);
+        processed.set.add(msgId);
         continue;
       }
       // Marque l'etat
@@ -282,6 +318,7 @@ async function main() {
         prospect.email_status = "replied";
       }
       prospect.replied_at = msg.date;
+      repliedCount++;
 
       // Alerte
       const { subject, text } = buildAlert(prospect, msg);
@@ -346,7 +383,7 @@ async function main() {
     fs.writeFileSync(processed.f, JSON.stringify([...processed.set], null, 2), "utf8");
   }
   log.step("Termine");
-  log.ok(`Reponses : ${DRY ? 0 : alerts.length} | Bounces : ${bouncedEmails.length} | dedup store : ${processed.set.size} msg`);
+  log.ok(`Reponses : ${DRY ? 0 : repliedCount} | OOO ignores : ${DRY ? 0 : oooCount} | Bounces : ${bouncedEmails.length} | dedup store : ${processed.set.size} msg`);
 }
 
 // Garde-fou : une connexion IMAP lente/injoignable peut laisser des sockets

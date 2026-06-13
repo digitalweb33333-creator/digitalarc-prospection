@@ -10,6 +10,8 @@
 //   5. Notification a NOTIFY_EMAIL (Joachim) avec le contexte + le texte envoye
 //
 // Garde-fous :
+//   - OOO / auto-repondeur d'absence : ignore (pas de reponse, pas d'escalade,
+//     statut inchange -> les relances continuent), juste marque traite. STOP prime.
 //   - STOP / desinscription : opt-out honore, AUCUNE reponse marketing
 //   - prospect deja en liste de suppression : ignore
 //   - confiance insuffisante / categorie inconnue : ESCALADE (notif a Joachim,
@@ -34,6 +36,7 @@ import { dataDir, parseArgs } from "../lib/config.js";
 import { loadCrm, saveCrm, addSuppression, loadSuppression } from "../lib/crm.js";
 import { classifyReply, AUTO_REPLY_CATEGORIES, CATEGORIES } from "./reply-classifier.js";
 import { buildReply } from "./reply-templates.js";
+import { isAutoResponder } from "./ooo.js";
 import { sendViaResend, resendConfigured } from "./resend-client.js";
 import { sendNotification } from "./notify.js";
 
@@ -83,6 +86,16 @@ async function downloadBody(client, uid) {
   }
 }
 
+// En-tetes bruts (pour la detection OOO via Auto-Submitted, etc.)
+async function downloadHeaders(client, uid) {
+  try {
+    const msg = await client.fetchOne(uid, { headers: true }, { uid: true });
+    return msg && msg.headers ? msg.headers.toString("utf8") : "";
+  } catch {
+    return "";
+  }
+}
+
 // Scan d'une boite : renvoie les messages entrants correspondant a un prospect.
 async function scanMailbox(account, byEmail, processed, out) {
   const client = new ImapFlow({
@@ -120,10 +133,11 @@ async function scanMailbox(account, byEmail, processed, out) {
         prospect,
       });
     }
-    // Passe 2 : corps (apres la boucle fetch)
+    // Passe 2 : corps + en-tetes (apres la boucle fetch)
     for (const mt of matches) {
       const body = await downloadBody(client, mt.uid);
-      out.push({ ...mt, body, mailbox: account.user });
+      const headers = await downloadHeaders(client, mt.uid);
+      out.push({ ...mt, body, headers, mailbox: account.user });
     }
   } finally {
     lock.release();
@@ -173,7 +187,7 @@ async function main() {
 
   const seen = new Set();
   let sentCount = 0;
-  const stats = { auto_replied: 0, escalated: 0, unsubscribed: 0, skipped: 0, failed: 0 };
+  const stats = { auto_replied: 0, escalated: 0, unsubscribed: 0, ooo: 0, skipped: 0, failed: 0 };
 
   for (const inc of incoming) {
     if (seen.has(inc.msgId)) continue;
@@ -208,6 +222,19 @@ async function main() {
       stats.skipped++;
       log.info(`  ${p.email_to} en liste de suppression -> ignore`);
       if (SEND) processed.set.add(inc.msgId);
+      continue;
+    }
+
+    // --- 2bis. Auto-repondeur d'absence (OOO) : ce n'est PAS une vraie reponse.
+    // On NE repond pas, on N'escalade pas et on NE passe pas en "replied"
+    // (les relances continuent). On marque juste le message traite (dedup). ---
+    if (isAutoResponder({ subject: inc.subject, body: inc.body, headers: inc.headers })) {
+      stats.ooo++;
+      log.info(`  OOO/absence : ${p.email_to} -> ignore (relances maintenues)`);
+      if (SEND) {
+        p.ooo_detected_at = inc.date || new Date().toISOString();
+        processed.set.add(inc.msgId);
+      }
       continue;
     }
 
@@ -276,7 +303,7 @@ async function main() {
   log.step("Resultat");
   log.ok(
     `Auto-reponses: ${stats.auto_replied} | escalades: ${stats.escalated} | ` +
-      `STOP: ${stats.unsubscribed} | ignores: ${stats.skipped} | echecs: ${stats.failed}`
+      `STOP: ${stats.unsubscribed} | OOO: ${stats.ooo} | ignores: ${stats.skipped} | echecs: ${stats.failed}`
   );
   if (!SEND) log.warn("DRY-RUN : rien n'a ete envoye ni enregistre. Ajoutez --send pour agir.");
 }
