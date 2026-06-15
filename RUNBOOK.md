@@ -95,6 +95,35 @@ désinscription → ajout automatique à la liste de suppression (RGPD).
     (garder `p=none` pendant le warm-up, puis passer à `quarantine`).
   - DNS géré chez Hostinger (NS dns-parking.com). Édition : hPanel > Domaines > DNS.
 
+## Orchestration des relances — UNE seule source (Windows)
+
+> **Décision (2026-06-15).** Les relances J+3/J+7/J+14 sont portées **uniquement par
+> la tâche Windows planifiée**. Le déclenchement automatique côté **Render est
+> DÉSACTIVÉ par défaut** (`server.js`), pour éviter un double envoi le même jour
+> (Render + Windows lançaient tous deux `followups`).
+>
+> **Tâches Windows de référence = le trio `.ps1` journalisé** (dans
+> `data/scheduler/`), seul jeu réellement actif (les `*.log` le prouvent) :
+> - `Digitalarc - Campagne` → `task-send.ps1` (envoi quotidien, `send.log`)
+> - `Digitalarc - Relances` → `task-followups.ps1` (relances 09:00, `followups.log`)
+> - `Digitalarc - Reponses` → `task-watch.ps1` (réponses/bounces toutes les 15 min, `watch.log`)
+>
+> Détails :
+> - Réglage Render : `FOLLOWUPS_ON_RENDER` (défaut `false`) dans `.env`. Mettre à
+>   `true` **seulement** si l'on supprime la tâche Windows et qu'on porte tout par Render.
+> - L'endpoint `GET /followups?token=…` reste disponible pour un déclenchement
+>   **manuel ponctuel** (il force les relances quel que soit le flag).
+> - `followups.js` est idempotent (une relance `f.sent` n'est jamais renvoyée) :
+>   même en cas de double déclenchement accidentel, une relance n'est pas dupliquée.
+> - **Doublons désactivés le 2026-06-15** : les anciennes tâches brutes (sans
+>   journalisation) `Digitalarc Relances` et `Digitalarc Reponses` — qui lançaient
+>   `node` directement, en parallèle du trio `.ps1` — ont été **désactivées**
+>   (`Disable-ScheduledTask`, réversible). Ré-activation si besoin :
+>   `Enable-ScheduledTask -TaskName "Digitalarc Relances"`.
+>
+> ⚠️ Les commandes `schtasks` ci-dessous (jeu sans tiret) sont **historiques** ;
+> ne pas les relancer telles quelles (elles recréeraient les doublons).
+
 ## Planifier les relances tous les jours (Windows)
 
 Crée une tâche planifiée qui lance les relances chaque matin à 9h :

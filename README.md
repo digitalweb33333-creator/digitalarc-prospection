@@ -42,10 +42,11 @@ npm run scrape
 
 | Critere            | Points | Detecte a l'etape |
 |--------------------|:-----:|-------------------|
-| Pas de site web    | 3     | scraping          |
+| Pas de site web    | 5     | scraping          |
+| Absent de ChatGPT  | 3     | screenshot        |
 | Pas en HTTPS       | 2     | enrichment        |
 | Site avant 2020    | 2     | enrichment        |
-| Absent de ChatGPT  | 2     | screenshot        |
+| Intention d'achat (creation BODACC) | 2 | scraping     |
 | Fiche GMB incomplete | 1   | scraping          |
 
 Seuil de conservation : **>= 7/10** (modifiable via `MIN_SCORE` ou `config/scoring.json`).
